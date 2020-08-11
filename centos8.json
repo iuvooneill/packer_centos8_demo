@@ -1,0 +1,77 @@
+{
+	"min_packer_version": "1.6.0",
+	"variables": {
+		"aws_access_key": "",
+		"aws_secret_key": "",
+		"aws_session_token": "",
+		"aws_region": "YOUR_AWS_REGION",
+		"vpc_id": "YOUR_VPC_ID",
+        "subnet_id": "YOUR_SUBNET_ID",
+		"aws_instance_type": "t3a.small",
+		"ami_filter_name": "CentOS Linux 7 x86_64 HVM EBS *",
+		"ami_filter_product_code": "aw0evgkw8e5c1q413zgy5pjce",
+		"ami_filter_owner": "679593333241",
+		"name": "centos8demo",
+		"description": "CentOS 8 Demo Image",
+		"datestamp": "{{strftime \"%Y-%m-%d-%H%M\"}}",
+		"default_user": "centos",
+		"root_volume_size": "8"
+	},
+	"provisioners": [{
+		"type": "shell",
+		"script": "centos8-install.sh",
+		"start_retry_timeout": "25m",
+		"execute_command": "echo 'centos'|sudo -S sh '{{.Path}}'",
+		"expect_disconnect": true
+	},{
+		"type": "shell",
+		"script": "finalize.sh",
+		"start_retry_timeout": "25m",
+		"execute_command": "echo 'centos'|sudo -S sh '{{.Path}}'"
+	}],
+	"builders": [{
+		"name": "{{ user `name`}}",
+		"type": "amazon-ebs",
+		"access_key": "{{user `aws_access_key_id`}}",
+		"secret_key": "{{user `aws_secret_key`}}",
+		"token": "{{user `aws_session_token`}}",
+		"region": "{{user `aws_region`}}",
+		"source_ami_filter": {
+			"filters": {
+			  	"name": "{{ user `ami_filter_name` }}",
+				"product-code": "{{ user `ami_filter_product_code` }}"
+			},
+			"owners": ["{{ user `ami_filter_owner` }}"],
+			"most_recent": true
+		 },
+		 "ssh_username": "{{user `default_user`}}",
+		 "ami_name": "{{user `name`}}-{{user `datestamp`}}",
+		 "ami_description": "{{user `description`}}",
+		 "tags": {
+			"Name": "{{user `name`}}-{{user `datestamp`}}",
+			"status": "testing"
+		},
+		"vpc_id": "{{ user `vpc_id` }}",
+        "subnet_id": "{{ user `subnet_id` }}",
+		"instance_type": "{{user `aws_instance_type`}}",
+		"ami_block_device_mappings": [{
+			"device_name": "/dev/sda1",
+			"volume_size": "{{ user `root_volume_size` }}",
+			"volume_type": "gp2",
+			"delete_on_termination": true
+		}],
+		"launch_block_device_mappings": [{
+			"device_name": "/dev/sda1",
+			"volume_size": "{{ user `root_volume_size` }}",
+			"volume_type": "gp2",
+			"delete_on_termination": true
+		}],
+		"force_deregister": true,
+		"force_delete_snapshot": true,
+
+		"ena_support": true,
+		"ssh_pty": true,
+		"ssh_timeout": "10m"
+	}]
+
+}
